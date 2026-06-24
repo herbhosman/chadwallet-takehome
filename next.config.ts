@@ -1,7 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  serverExternalPackages: [
+    "@solana/kit",
+    "@solana-program/memo",
+    "@solana-program/system",
+    "@solana-program/token",
+  ],
 };
 
 export default nextConfig;
