@@ -1,29 +1,39 @@
 "use client";
 
+import { useMemo } from "react";
 import { PrivyProvider } from "@privy-io/react-auth";
 import {
   createSolanaRpc,
   createSolanaRpcSubscriptions,
 } from "@solana/kit";
 
-function getSolanaRpcUrls() {
-  const http =
-    process.env.NEXT_PUBLIC_SOLANA_RPC_URL ??
-    "https://api.mainnet-beta.solana.com";
-  const ws = http.startsWith("https")
-    ? http.replace("https://", "wss://")
-    : http.replace("http://", "ws://");
-  return { http, ws };
+function toWebSocketUrl(httpUrl: string): string {
+  try {
+    const url = new URL(httpUrl.trim());
+    url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+    return url.toString();
+  } catch {
+    return "wss://api.mainnet-beta.solana.com";
+  }
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
 
+  const solanaRpc = useMemo(() => {
+    const http =
+      process.env.NEXT_PUBLIC_SOLANA_RPC_URL?.trim() ??
+      "https://api.mainnet-beta.solana.com";
+
+    return {
+      rpc: createSolanaRpc(http),
+      rpcSubscriptions: createSolanaRpcSubscriptions(toWebSocketUrl(http)),
+    };
+  }, []);
+
   if (!appId) {
     return <>{children}</>;
   }
-
-  const { http, ws } = getSolanaRpcUrls();
 
   return (
     <PrivyProvider
@@ -38,10 +48,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         loginMethods: ["google"],
         solana: {
           rpcs: {
-            "solana:mainnet": {
-              rpc: createSolanaRpc(http),
-              rpcSubscriptions: createSolanaRpcSubscriptions(ws),
-            },
+            "solana:mainnet": solanaRpc,
           },
         },
         embeddedWallets: {
