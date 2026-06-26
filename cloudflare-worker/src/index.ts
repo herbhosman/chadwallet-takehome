@@ -23,6 +23,15 @@ export default {
       });
     }
 
+    if (request.method === "GET") {
+      return withCors(
+        new Response(
+          JSON.stringify({ ok: true, service: "chadwallet-codex-proxy" }),
+          { headers: { "Content-Type": "application/json" } },
+        ),
+      );
+    }
+
     if (request.method !== "POST") {
       return new Response("Method not allowed", { status: 405 });
     }
