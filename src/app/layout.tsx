@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Providers } from "@/components/providers/Providers";
+import { BRAND } from "@/lib/branding";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -17,7 +18,7 @@ export const metadata: Metadata = {
   title: "ChadWallet — Social Crypto Trading",
   description:
     "Trade Solana tokens in seconds. fomo-style social trading powered by Privy, Codex, Jupiter, and Alchemy.",
-  icons: { icon: "/chadwallet-logo.svg" },
+  icons: { icon: BRAND.logoLight },
 };
 
 export default function RootLayout({

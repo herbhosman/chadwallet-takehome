@@ -1,5 +1,7 @@
+import Image from "next/image";
 import Link from "next/link";
 import { TrendingUp, Zap, Users } from "lucide-react";
+import { BRAND } from "@/lib/branding";
 import { formatPct, formatUsd, cn } from "@/lib/utils";
 import type { TokenInfo } from "@/types/token";
 
@@ -8,19 +10,19 @@ export function HomeContent({ tokens }: { tokens: TokenInfo[] }) {
 
   return (
     <div className="mx-auto max-w-lg space-y-6 px-4 py-6">
-      <section className="space-y-2">
+      <section className="space-y-3">
+        <Image
+          src={BRAND.logoLight}
+          alt="ChadWallet"
+          width={56}
+          height={56}
+          className="rounded-xl"
+        />
         <p className="text-xs font-semibold uppercase tracking-widest text-chad-accent">
           Never miss out again
         </p>
-        <h1 className="text-3xl font-black leading-tight">
-          Where traders
-          <br />
-          become <span className="text-chad-accent">legends</span>
-        </h1>
-        <p className="text-sm text-chad-muted">
-          Trade Solana memecoins in seconds. Social-first, gasless, one tap to
-          buy.
-        </p>
+        <h1 className="text-3xl font-black leading-tight">{BRAND.tagline}</h1>
+        <p className="text-sm text-chad-muted">{BRAND.subtitle}</p>
       </section>
 
       <section className="grid grid-cols-3 gap-2">

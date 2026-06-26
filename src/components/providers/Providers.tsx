@@ -6,6 +6,7 @@ import {
   createSolanaRpc,
   createSolanaRpcSubscriptions,
 } from "@solana/kit";
+import { BRAND } from "@/lib/branding";
 
 function toWebSocketUrl(httpUrl: string): string {
   try {
@@ -42,7 +43,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         appearance: {
           theme: "dark",
           accentColor: "#39FF14",
-          logo: "/chadwallet-logo.svg",
+          logo: BRAND.logoLight,
           walletChainType: "solana-only",
         },
         loginMethods: ["google"],

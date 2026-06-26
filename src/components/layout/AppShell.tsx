@@ -9,6 +9,7 @@ import { TokenBanner } from "./TokenBanner";
 import { BottomNav } from "./BottomNav";
 import { LoginScreen } from "@/components/auth/LoginScreen";
 import { WalletProvisioner } from "@/components/auth/WalletProvisioner";
+import { BRAND } from "@/lib/branding";
 import type { TokenInfo } from "@/types/token";
 
 interface AppShellProps {
@@ -50,7 +51,14 @@ function PrivyGate(props: AppShellProps) {
 
 function BootScreen({ message }: { message: string }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-chad-bg">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-chad-bg">
+      <Image
+        src={BRAND.logoLight}
+        alt="ChadWallet"
+        width={64}
+        height={64}
+        className="rounded-xl"
+      />
       <p className="text-sm text-chad-muted">{message}</p>
     </div>
   );
@@ -68,10 +76,11 @@ function ShellLayout({
         <div className="flex items-center justify-between px-4 py-3">
           <Link href="/" className="flex items-center gap-2">
             <Image
-              src="/chadwallet-logo.svg"
+              src={BRAND.logoLight}
               alt="ChadWallet"
-              width={32}
-              height={32}
+              width={36}
+              height={36}
+              className="rounded-lg"
             />
             <span className="text-lg font-black tracking-tight">
               Chad<span className="text-chad-accent">Wallet</span>

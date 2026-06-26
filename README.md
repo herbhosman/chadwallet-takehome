@@ -88,7 +88,7 @@ Add all env vars from `.env.example` in the Vercel project settings.
 
 ## Assets
 
-Replace `public/chadwallet-logo.svg` with assets from the [ChadWallet Drive folder](https://drive.google.com/drive/folders/1j4PZng-sJHxqAATUF1WYw1_jm8nyQwCE).
+Replace assets in `public/assets/chadwallet/` with updates from the [ChadWallet Drive folder](https://drive.google.com/drive/folders/1j4PZng-sJHxqAATUF1WYw1_jm8nyQwCE).
 
 ## Project structure
 
