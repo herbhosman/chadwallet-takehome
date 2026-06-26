@@ -3,7 +3,7 @@ import {
   SOLANA_NETWORK_ID,
 } from "./constants";
 import { MOCK_TRENDING } from "./mock-data";
-import type { LiveTrade, TokenBar, TokenHolder, TokenInfo } from "@/types/token";
+import type { FeedTrade, LiveTrade, TokenBar, TokenHolder, TokenInfo } from "@/types/token";
 
 interface CodexResponse<T> {
   data?: T;
@@ -310,4 +310,25 @@ export async function fetchHolders(
     balanceUsd: parseFloat(h.balanceUsd),
     pctHeld: parseFloat(h.percentage),
   }));
+}
+
+export async function fetchFeedTrades(limit = 30): Promise<FeedTrade[]> {
+  const trending = await fetchTrendingTokens(8);
+  if (!trending.length) return [];
+
+  const batches = await Promise.all(
+    trending.slice(0, 6).map(async (token) => {
+      const trades = await fetchLiveTrades(token.address, 8);
+      return trades.map((trade) => ({
+        ...trade,
+        tokenAddress: token.address,
+        tokenSymbol: token.symbol,
+      }));
+    }),
+  );
+
+  return batches
+    .flat()
+    .sort((a, b) => b.timestamp - a.timestamp)
+    .slice(0, limit);
 }

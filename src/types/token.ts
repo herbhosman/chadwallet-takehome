@@ -36,6 +36,11 @@ export interface LiveTrade {
   maker: string;
 }
 
+export interface FeedTrade extends LiveTrade {
+  tokenAddress: string;
+  tokenSymbol: string;
+}
+
 export interface UserPosition {
   mint: string;
   symbol: string;

@@ -9,6 +9,7 @@ export function cn(...inputs: ClassValue[]) {
 export function formatUsd(value: number | string | null | undefined): string {
   const n = typeof value === "string" ? parseFloat(value) : value;
   if (n == null || Number.isNaN(n)) return "$0.00";
+  if (n === 0) return "$0.00";
   if (n < 0.0001) return `$${n.toExponential(2)}`;
   if (n < 1) return `$${n.toFixed(4)}`;
   if (n < 1000) return `$${n.toFixed(2)}`;
