@@ -1,7 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { formatCompact, formatPct, formatUsd, cn } from "@/lib/utils";
+import { getTradingViewSymbol } from "@/lib/tradingview";
 import { TradingChart } from "./TradingChart";
+import { TradingViewWidget } from "./TradingViewWidget";
 import { HoldersList } from "./HoldersList";
 import { LiveTrades } from "./LiveTrades";
 import type { LiveTrade, TokenBar, TokenHolder, TokenInfo } from "@/types/token";
@@ -15,6 +18,8 @@ interface TokenDetailProps {
 
 export function TokenDetail({ token, bars, holders, trades }: TokenDetailProps) {
   const positive = token.change24h >= 0;
+  const tvSymbol = getTradingViewSymbol(token);
+  const [chartMode, setChartMode] = useState<"codex" | "tradingview">("codex");
 
   return (
     <div className="space-y-4">
@@ -54,7 +59,42 @@ export function TokenDetail({ token, bars, holders, trades }: TokenDetailProps) 
         </div>
       </div>
 
-      <TradingChart bars={bars} />
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setChartMode("codex")}
+            className={cn(
+              "rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors",
+              chartMode === "codex"
+                ? "bg-chad-accent text-black"
+                : "bg-chad-surface text-chad-muted hover:text-chad-text",
+            )}
+          >
+            Codex OHLCV
+          </button>
+          {tvSymbol ? (
+            <button
+              type="button"
+              onClick={() => setChartMode("tradingview")}
+              className={cn(
+                "rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors",
+                chartMode === "tradingview"
+                  ? "bg-chad-accent text-black"
+                  : "bg-chad-surface text-chad-muted hover:text-chad-text",
+              )}
+            >
+              TradingView
+            </button>
+          ) : null}
+        </div>
+
+        {chartMode === "tradingview" && tvSymbol ? (
+          <TradingViewWidget symbol={tvSymbol} />
+        ) : (
+          <TradingChart bars={bars} />
+        )}
+      </div>
       <HoldersList holders={holders} />
       <LiveTrades initialTrades={trades} mint={token.address} />
     </div>
