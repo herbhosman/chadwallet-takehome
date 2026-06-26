@@ -1,6 +1,7 @@
 name = "chadwallet-codex-proxy"
 main = "src/index.ts"
 compatibility_date = "2024-01-01"
+workers_dev = true
 
 [vars]
 # CODEX_API_KEY set via: wrangler secret put CODEX_API_KEY
