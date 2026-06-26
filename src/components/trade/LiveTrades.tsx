@@ -8,9 +8,11 @@ import type { LiveTrade } from "@/types/token";
 export function LiveTrades({
   initialTrades,
   mint,
+  live = true,
 }: {
   initialTrades: LiveTrade[];
   mint: string;
+  live?: boolean;
 }) {
   const [trades, setTrades] = useState(initialTrades);
 
@@ -81,7 +83,14 @@ export function LiveTrades({
         </span>
       </div>
       <ul className="max-h-56 overflow-y-auto">
-        {trades.map((t, i) => (
+        {trades.length === 0 ? (
+          <li className="px-4 py-6 text-center text-xs text-chad-muted">
+            {live
+              ? "No recent swaps for this token"
+              : "No live trade feed — connect Codex API key"}
+          </li>
+        ) : (
+          trades.map((t, i) => (
           <li
             key={`${t.id}-${t.timestamp}-${i}`}
             className="flex items-center justify-between border-b border-chad-border/40 px-4 py-2 text-xs last:border-0"
@@ -103,7 +112,8 @@ export function LiveTrades({
             </div>
             <span className="font-medium">{formatUsd(t.amountUsd)}</span>
           </li>
-        ))}
+          ))
+        )}
       </ul>
     </div>
   );

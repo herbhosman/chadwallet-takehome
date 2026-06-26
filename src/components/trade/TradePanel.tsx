@@ -9,8 +9,15 @@ import {
 import { VersionedTransaction } from "@solana/web3.js";
 import { SOL_MINT } from "@/lib/constants";
 import { solToLamports } from "@/lib/jupiter";
+import {
+  defaultDecimalsForMint,
+  formatTokenAmount,
+  inputDecimals,
+  outputDecimals,
+  rawToUnits,
+  unitsToRaw,
+} from "@/lib/token-amount";
 import { formatUsd, cn } from "@/lib/utils";
-import { logTrade } from "@/lib/supabase";
 import type { TokenInfo } from "@/types/token";
 
 interface TradePanelProps {
@@ -37,6 +44,8 @@ export function TradePanel({ token }: TradePanelProps) {
 
   const solanaWallet = wallets[0];
   const walletAddress = solanaWallet?.address;
+  const tokenDecimals =
+    token.decimals ?? defaultDecimalsForMint(token.address);
 
   const refreshBalances = useCallback(async () => {
     if (!walletAddress) return;
@@ -73,7 +82,7 @@ export function TradePanel({ token }: TradePanelProps) {
     const rawAmount =
       side === "buy"
         ? solToLamports(parseFloat(amount))
-        : String(Math.floor(parseFloat(amount) * 1e6));
+        : unitsToRaw(parseFloat(amount), inputDecimals(side, tokenDecimals));
 
     try {
       const res = await fetch(
@@ -132,14 +141,18 @@ export function TradePanel({ token }: TradePanelProps) {
 
       setSuccess(result.signature ?? "Swap submitted");
       if (user?.id) {
-        await logTrade({
-          userId: user.id,
-          wallet: walletAddress!,
-          mint: token.address,
-          symbol: token.symbol,
-          side,
-          amountUsd: parseFloat(amount) * (side === "buy" ? 1 : token.priceUsd),
-          signature: result.signature,
+        await fetch("/api/trades", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: user.id,
+            wallet: walletAddress,
+            mint: token.address,
+            symbol: token.symbol,
+            side,
+            amountUsd: parseFloat(amount) * (side === "buy" ? 1 : token.priceUsd),
+            signature: result.signature,
+          }),
         });
       }
       refreshBalances();
@@ -210,7 +223,13 @@ export function TradePanel({ token }: TradePanelProps) {
           <div className="flex justify-between">
             <span className="text-chad-muted">Est. output</span>
             <span className="font-medium">
-              {(parseInt(quote.outAmount, 10) / 1e6).toFixed(4)}
+              {formatTokenAmount(
+                rawToUnits(
+                  quote.outAmount,
+                  outputDecimals(side, tokenDecimals),
+                ),
+              )}{" "}
+              {side === "buy" ? token.symbol : "SOL"}
             </span>
           </div>
           <div className="flex justify-between">

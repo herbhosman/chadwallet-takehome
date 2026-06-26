@@ -10,6 +10,8 @@ interface CodexResponse<T> {
   errors?: { message: string }[];
 }
 
+const MIN_CHART_BARS = 10;
+
 async function codexQuery<T>(
   query: string,
   variables?: Record<string, unknown>,
@@ -65,6 +67,7 @@ const FILTER_TOKENS_QUERY = `
           address
           name
           symbol
+          decimals
           imageLargeUrl
           imageSmallUrl
         }
@@ -73,10 +76,69 @@ const FILTER_TOKENS_QUERY = `
   }
 `;
 
+const SEARCH_TOKENS_QUERY = `
+  query SearchTokens($network: [Int!]!, $phrase: String!, $limit: Int!) {
+    filterTokens(
+      filters: { network: $network }
+      phrase: $phrase
+      limit: $limit
+    ) {
+      results {
+        priceUSD
+        change24
+        volume24
+        marketCap
+        liquidity
+        token {
+          address
+          name
+          symbol
+          decimals
+          imageLargeUrl
+          imageSmallUrl
+        }
+      }
+    }
+  }
+`;
+
+const TOKEN_DECIMALS_QUERY = `
+  query TokenDecimals($address: String!, $networkId: Int!) {
+    token(input: { address: $address, networkId: $networkId }) {
+      decimals
+      symbol
+      name
+      info { imageLargeUrl imageSmallUrl }
+    }
+  }
+`;
+
 const TOKEN_BARS_QUERY = `
-  query TokenBars($symbol: String!, $from: Int!, $to: Int!, $resolution: String!) {
-    getTokenBars(symbol: $symbol, from: $from, to: $to, resolution: $resolution) {
-      o h l c t volume
+  query TokenBars($symbol: String!, $from: Int!, $to: Int!, $resolution: String!, $countback: Int) {
+    getTokenBars(
+      symbol: $symbol
+      from: $from
+      to: $to
+      resolution: $resolution
+      countback: $countback
+      removeEmptyBars: true
+    ) {
+      o h l c t volume s
+    }
+  }
+`;
+
+const PAIR_BARS_QUERY = `
+  query PairBars($symbol: String!, $from: Int!, $to: Int!, $resolution: String!, $countback: Int) {
+    getBars(
+      symbol: $symbol
+      from: $from
+      to: $to
+      resolution: $resolution
+      countback: $countback
+      removeEmptyBars: true
+    ) {
+      o h l c t volume s
     }
   }
 `;
@@ -88,8 +150,8 @@ const PAIR_METADATA_QUERY = `
       liquidity
       volume24
       priceChange24
-      enhancedToken0 { name symbol address }
-      enhancedToken1 { name symbol address }
+      enhancedToken0 { name symbol address imageLargeUrl imageSmallUrl }
+      enhancedToken1 { name symbol address imageLargeUrl imageSmallUrl }
     }
   }
 `;
@@ -126,7 +188,6 @@ const HOLDERS_QUERY = `
         address
         balance
         balanceUsd
-        percentage
       }
     }
   }
@@ -146,6 +207,50 @@ const LIST_PAIRS_QUERY = `
   }
 `;
 
+type BarsPayload = {
+  o: number[];
+  h: number[];
+  l: number[];
+  c: number[];
+  t: number[];
+  volume?: string[];
+  s?: string;
+};
+
+function mapBars(bars: BarsPayload | null | undefined): TokenBar[] {
+  if (!bars?.t?.length) return [];
+  return bars.t.map((time, i) => ({
+    time,
+    open: bars.o[i] ?? 0,
+    high: bars.h[i] ?? 0,
+    low: bars.l[i] ?? 0,
+    close: bars.c[i] ?? 0,
+    volume: parseFloat(bars.volume?.[i] ?? "0"),
+  }));
+}
+
+async function queryBars(
+  query: string,
+  symbol: string,
+  from: number,
+  to: number,
+  resolution: string,
+  countback = 120,
+): Promise<TokenBar[]> {
+  const data = await codexQuery<{ getTokenBars?: BarsPayload; getBars?: BarsPayload }>(
+    query,
+    { symbol, from, to, resolution, countback },
+  );
+  return mapBars(data?.getTokenBars ?? data?.getBars);
+}
+
+async function getPrimaryPairId(address: string): Promise<string | null> {
+  const pairs = await codexQuery<{
+    listPairsWithMetadataForToken: { results: { pair: { id: string } }[] };
+  }>(LIST_PAIRS_QUERY, { tokenAddress: address, networkId: SOLANA_NETWORK_ID });
+  return pairs?.listPairsWithMetadataForToken?.results?.[0]?.pair?.id ?? null;
+}
+
 function mapTokenResult(r: {
   priceUSD?: string | number;
   change24?: string | number;
@@ -156,6 +261,7 @@ function mapTokenResult(r: {
     address: string;
     name: string;
     symbol: string;
+    decimals?: number;
     imageLargeUrl?: string;
     imageSmallUrl?: string;
   };
@@ -165,6 +271,7 @@ function mapTokenResult(r: {
     address: r.token.address,
     name: r.token.name ?? "Unknown",
     symbol: r.token.symbol ?? "???",
+    decimals: r.token.decimals,
     imageUrl: r.token.imageLargeUrl ?? r.token.imageSmallUrl,
     priceUsd: parseFloat(String(r.priceUSD ?? 0)),
     change24h: parseFloat(String(r.change24 ?? 0)),
@@ -173,6 +280,8 @@ function mapTokenResult(r: {
     liquidity: r.liquidity ? parseFloat(String(r.liquidity)) : undefined,
   };
 }
+
+const SOLANA_ADDRESS_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 
 export async function fetchTrendingTokens(limit = 20): Promise<TokenInfo[]> {
   const data = await codexQuery<{
@@ -186,37 +295,91 @@ export async function fetchTrendingTokens(limit = 20): Promise<TokenInfo[]> {
   return tokens.length > 0 ? tokens : MOCK_TRENDING;
 }
 
+export async function searchTokens(
+  phrase: string,
+  limit = 25,
+): Promise<TokenInfo[]> {
+  const trimmed = phrase.trim();
+  if (!trimmed) return [];
+
+  if (SOLANA_ADDRESS_RE.test(trimmed)) {
+    const byAddress =
+      (await fetchTokenMetadata(trimmed)) ??
+      (await fetchTokenDecimals(trimmed));
+    return byAddress ? [byAddress] : [];
+  }
+
+  const data = await codexQuery<{
+    filterTokens: { results: Parameters<typeof mapTokenResult>[0][] };
+  }>(SEARCH_TOKENS_QUERY, {
+    network: [SOLANA_NETWORK_ID],
+    phrase: trimmed,
+    limit,
+  });
+
+  return (data?.filterTokens?.results ?? [])
+    .map(mapTokenResult)
+    .filter((t): t is TokenInfo => t !== null);
+}
+
+export async function fetchTokenDecimals(address: string): Promise<TokenInfo | null> {
+  const data = await codexQuery<{
+    token: {
+      decimals: number;
+      symbol: string;
+      name: string;
+      info?: { imageLargeUrl?: string; imageSmallUrl?: string };
+    };
+  }>(TOKEN_DECIMALS_QUERY, { address, networkId: SOLANA_NETWORK_ID });
+
+  const t = data?.token;
+  if (!t) return null;
+
+  return {
+    address,
+    name: t.name ?? "Unknown",
+    symbol: t.symbol ?? address.slice(0, 4).toUpperCase(),
+    decimals: t.decimals,
+    imageUrl: t.info?.imageLargeUrl ?? t.info?.imageSmallUrl,
+    priceUsd: 0,
+    change24h: 0,
+    volume24h: 0,
+  };
+}
+
 export async function fetchTokenBars(
   address: string,
   resolution = "60",
-  hoursBack = 48,
+  hoursBack = 168,
 ): Promise<TokenBar[]> {
   const now = Math.floor(Date.now() / 1000);
-  const from = now - hoursBack * 3600;
   const symbol = `${address}:${SOLANA_NETWORK_ID}`;
 
-  const data = await codexQuery<{
-    getTokenBars: {
-      o: number[];
-      h: number[];
-      l: number[];
-      c: number[];
-      t: number[];
-      volume?: string[];
-    };
-  }>(TOKEN_BARS_QUERY, { symbol, from, to: now, resolution });
+  const windows = [hoursBack, hoursBack * 4, 24 * 30];
+  let best: TokenBar[] = [];
 
-  const bars = data?.getTokenBars;
-  if (!bars?.t?.length) return [];
+  for (const hours of windows) {
+    const from = now - hours * 3600;
+    let bars = await queryBars(TOKEN_BARS_QUERY, symbol, from, now, resolution, 120);
+    if (bars.length < MIN_CHART_BARS) {
+      const pairId = await getPrimaryPairId(address);
+      if (pairId) {
+        const pairBars = await queryBars(
+          PAIR_BARS_QUERY,
+          pairId,
+          from,
+          now,
+          resolution,
+          120,
+        );
+        if (pairBars.length > bars.length) bars = pairBars;
+      }
+    }
+    if (bars.length > best.length) best = bars;
+    if (best.length >= MIN_CHART_BARS) break;
+  }
 
-  return bars.t.map((time, i) => ({
-    time,
-    open: bars.o[i] ?? 0,
-    high: bars.h[i] ?? 0,
-    low: bars.l[i] ?? 0,
-    close: bars.c[i] ?? 0,
-    volume: parseFloat(bars.volume?.[i] ?? "0"),
-  }));
+  return best;
 }
 
 export async function fetchTokenMetadata(address: string): Promise<TokenInfo | null> {
@@ -225,21 +388,37 @@ export async function fetchTokenMetadata(address: string): Promise<TokenInfo | n
   }>(LIST_PAIRS_QUERY, { tokenAddress: address, networkId: SOLANA_NETWORK_ID });
 
   const pairId = pairs?.listPairsWithMetadataForToken?.results?.[0]?.pair?.id;
-  if (!pairId) return null;
 
-  const meta = await codexQuery<{
-    pairMetadata: {
-      price: string;
-      liquidity: string;
-      volume24: string;
-      priceChange24: string;
-      enhancedToken0: { name: string; symbol: string; address: string };
-      enhancedToken1: { name: string; symbol: string; address: string };
-    };
-  }>(PAIR_METADATA_QUERY, { pairId });
+  const [meta, decimalsInfo] = await Promise.all([
+    pairId
+      ? codexQuery<{
+          pairMetadata: {
+            price: string;
+            liquidity: string;
+            volume24: string;
+            priceChange24: string;
+            enhancedToken0: {
+              name: string;
+              symbol: string;
+              address: string;
+              imageLargeUrl?: string;
+              imageSmallUrl?: string;
+            };
+            enhancedToken1: {
+              name: string;
+              symbol: string;
+              address: string;
+              imageLargeUrl?: string;
+              imageSmallUrl?: string;
+            };
+          };
+        }>(PAIR_METADATA_QUERY, { pairId })
+      : null,
+    fetchTokenDecimals(address),
+  ]);
 
   const pm = meta?.pairMetadata;
-  if (!pm) return null;
+  if (!pm) return decimalsInfo;
 
   const token =
     pm.enhancedToken0.address === address
@@ -250,6 +429,11 @@ export async function fetchTokenMetadata(address: string): Promise<TokenInfo | n
     address,
     name: token.name,
     symbol: token.symbol,
+    decimals: decimalsInfo?.decimals,
+    imageUrl:
+      token.imageLargeUrl ??
+      token.imageSmallUrl ??
+      decimalsInfo?.imageUrl,
     priceUsd: parseFloat(pm.price),
     change24h: parseFloat(pm.priceChange24),
     volume24h: parseFloat(pm.volume24),
@@ -299,17 +483,27 @@ export async function fetchHolders(
         address: string;
         balance: string;
         balanceUsd: string;
-        percentage: string;
       }[];
     };
   }>(HOLDERS_QUERY, { tokenId, limit });
 
-  return (data?.holders?.items ?? []).map((h) => ({
-    address: h.address,
-    balance: parseFloat(h.balance),
-    balanceUsd: parseFloat(h.balanceUsd),
-    pctHeld: parseFloat(h.percentage),
-  }));
+  const items = data?.holders?.items ?? [];
+  if (!items.length) return [];
+
+  const totalBalance = items.reduce(
+    (sum, h) => sum + parseFloat(h.balance),
+    0,
+  );
+
+  return items.map((h) => {
+    const balance = parseFloat(h.balance);
+    return {
+      address: h.address,
+      balance,
+      balanceUsd: parseFloat(h.balanceUsd),
+      pctHeld: totalBalance > 0 ? (balance / totalBalance) * 100 : 0,
+    };
+  });
 }
 
 export async function fetchFeedTrades(limit = 30): Promise<FeedTrade[]> {

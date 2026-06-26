@@ -24,8 +24,11 @@ interface TradePageClientProps {
   token: TokenInfo;
   trending: TokenInfo[];
   bars: TokenBar[];
+  barsLive: boolean;
   holders: TokenHolder[];
+  holdersLive: boolean;
   trades: LiveTrade[];
+  tradesLive: boolean;
 }
 
 export function TradePageClient({
@@ -33,8 +36,11 @@ export function TradePageClient({
   token,
   trending,
   bars,
+  barsLive,
   holders,
+  holdersLive,
   trades,
+  tradesLive,
 }: TradePageClientProps) {
   return (
     <AppShell tokens={trending} hideNav>
@@ -45,8 +51,11 @@ export function TradePageClient({
         <TokenDetail
           token={token}
           bars={bars}
+          barsLive={barsLive}
           holders={holders}
+          holdersLive={holdersLive}
           trades={trades}
+          tradesLive={tradesLive}
         />
         <TradePanel token={token} />
       </div>

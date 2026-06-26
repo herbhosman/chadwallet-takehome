@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { TokenAvatar } from "@/components/ui/TokenAvatar";
 import { formatCompact, formatPct, formatUsd, cn } from "@/lib/utils";
 import type { TokenInfo } from "@/types/token";
 
@@ -30,6 +31,11 @@ export function TrendingSidebar({ tokens, activeMint }: TrendingSidebarProps) {
                 )}
               >
                 <span className="w-5 text-xs text-chad-muted">{i + 1}</span>
+                <TokenAvatar
+                  symbol={token.symbol}
+                  imageUrl={token.imageUrl}
+                  size={28}
+                />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-bold">{token.symbol}</span>

@@ -1,4 +1,5 @@
 -- ChadWallet take-home: user watchlists and trade history
+-- Auth is via Privy (user_id = Privy DID), not Supabase Auth.
 
 create table if not exists watchlist (
   id uuid primary key default gen_random_uuid(),
@@ -27,14 +28,18 @@ create index if not exists idx_trades_wallet on trades (wallet_address);
 alter table watchlist enable row level security;
 alter table trades enable row level security;
 
-create policy "Users manage own watchlist"
-  on watchlist for all
-  using (auth.uid()::text = user_id or user_id = current_setting('request.jwt.claims', true)::json->>'sub');
+-- Take-home: app uses anon key + Privy user_id strings (no Supabase Auth session).
+create policy "Allow watchlist read"
+  on watchlist for select using (true);
 
-create policy "Users read own trades"
-  on trades for select
-  using (auth.uid()::text = user_id or user_id = current_setting('request.jwt.claims', true)::json->>'sub');
+create policy "Allow watchlist write"
+  on watchlist for insert with check (true);
 
-create policy "Users insert own trades"
-  on trades for insert
-  with check (true);
+create policy "Allow watchlist delete"
+  on watchlist for delete using (true);
+
+create policy "Allow trades read"
+  on trades for select using (true);
+
+create policy "Allow trades insert"
+  on trades for insert with check (true);

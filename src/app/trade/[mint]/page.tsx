@@ -6,12 +6,7 @@ import {
   fetchHolders,
   fetchLiveTrades,
 } from "@/lib/codex";
-import {
-  generateMockBars,
-  generateMockHolders,
-  generateMockTrades,
-  getMockToken,
-} from "@/lib/mock-data";
+import { generateMockBars, getMockToken } from "@/lib/mock-data";
 
 export const revalidate = 15;
 
@@ -35,9 +30,8 @@ export default async function TradePage({ params }: PageProps) {
     trending.find((t) => t.address === mint) ??
     getMockToken(mint);
 
-  const chartBars = bars.length > 0 ? bars : generateMockBars();
-  const holderData = holders.length > 0 ? holders : generateMockHolders();
-  const tradeData = trades.length > 0 ? trades : generateMockTrades();
+  const barsLive = bars.length > 0;
+  const chartBars = barsLive ? bars : generateMockBars();
 
   return (
     <TradePageClient
@@ -45,8 +39,11 @@ export default async function TradePage({ params }: PageProps) {
       token={token}
       trending={trending}
       bars={chartBars}
-      holders={holderData}
-      trades={tradeData}
+      barsLive={barsLive}
+      holders={holders}
+      holdersLive={holders.length > 0}
+      trades={trades}
+      tradesLive={trades.length > 0}
     />
   );
 }

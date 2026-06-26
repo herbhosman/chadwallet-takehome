@@ -3,6 +3,7 @@
 import useSWR from "swr";
 import Link from "next/link";
 import { AppShell } from "@/components/layout/AppShell";
+import { TokenAvatar } from "@/components/ui/TokenAvatar";
 import { formatPct, formatUsd, cn } from "@/lib/utils";
 import type { TokenInfo } from "@/types/token";
 import { MOCK_TRENDING } from "@/lib/mock-data";
@@ -29,6 +30,10 @@ export default function LeaderboardPage() {
       <div className="mx-auto max-w-lg space-y-4 px-4 py-6">
         <h1 className="text-xl font-black">Leaderboard</h1>
         <p className="text-sm text-chad-muted">Top traders · 24h PnL</p>
+        <p className="rounded-lg border border-chad-border bg-chad-bg px-3 py-2 text-[11px] text-chad-muted">
+          Demo trader rankings below — not connected to on-chain wallets. Top
+          tokens use live Codex volume data.
+        </p>
         <ul className="space-y-2">
           {MOCK_TRADERS.map((trader, i) => (
             <li
@@ -48,7 +53,7 @@ export default function LeaderboardPage() {
               <div className="flex-1">
                 <div className="font-bold">@{trader.name}</div>
                 <div className="text-xs text-chad-muted">
-                  {trader.winRate}% win rate
+                  {trader.winRate}% win rate · demo
                 </div>
               </div>
               <div className="text-right">
@@ -61,15 +66,20 @@ export default function LeaderboardPage() {
           ))}
         </ul>
         <section>
-          <h2 className="mb-2 text-sm font-bold">Top tokens</h2>
+          <h2 className="mb-2 text-sm font-bold">Top tokens (live)</h2>
           <ul className="space-y-2">
             {tokens.slice(0, 5).map((token, i) => (
               <li key={token.address}>
                 <Link
                   href={`/trade/${token.address}`}
-                  className="flex items-center justify-between rounded-xl border border-chad-border bg-chad-surface px-4 py-2 text-sm"
+                  className="flex items-center gap-3 rounded-xl border border-chad-border bg-chad-surface px-4 py-2 text-sm"
                 >
-                  <span>
+                  <TokenAvatar
+                    symbol={token.symbol}
+                    imageUrl={token.imageUrl}
+                    size={32}
+                  />
+                  <span className="flex-1">
                     #{i + 1} {token.symbol}
                   </span>
                   <span

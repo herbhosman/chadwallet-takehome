@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { TrendingUp, Zap, Users } from "lucide-react";
+import { TokenAvatar } from "@/components/ui/TokenAvatar";
 import { BRAND } from "@/lib/branding";
 import { formatPct, formatUsd, cn } from "@/lib/utils";
 import type { TokenInfo } from "@/types/token";
@@ -90,6 +91,7 @@ function TokenRow({ token, rank }: { token: TokenInfo; rank: number }) {
         className="flex items-center gap-3 rounded-xl border border-chad-border bg-chad-surface px-4 py-3 transition-colors hover:border-chad-accent/30"
       >
         <span className="text-lg font-black text-chad-muted">{rank}</span>
+        <TokenAvatar symbol={token.symbol} imageUrl={token.imageUrl} size={40} />
         <div className="min-w-0 flex-1">
           <div className="font-bold">{token.symbol}</div>
           <div className="truncate text-xs text-chad-muted">{token.name}</div>

@@ -15,9 +15,24 @@ import type { TokenBar } from "@/types/token";
 interface TradingChartProps {
   bars: TokenBar[];
   height?: number;
+  live?: boolean;
 }
 
-export function TradingChart({ bars, height = 320 }: TradingChartProps) {
+function pricePrecision(bars: TokenBar[]): number {
+  const lows = bars.map((b) => b.low).filter((v) => v > 0);
+  if (!lows.length) return 6;
+  const min = Math.min(...lows);
+  if (min >= 1) return 4;
+  if (min >= 0.01) return 6;
+  if (min >= 0.0001) return 8;
+  return 10;
+}
+
+export function TradingChart({
+  bars,
+  height = 320,
+  live = true,
+}: TradingChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
@@ -84,6 +99,18 @@ export function TradingChart({ bars, height = 320 }: TradingChartProps) {
 
   useEffect(() => {
     if (!seriesRef.current || bars.length === 0) return;
+
+    const precision = pricePrecision(bars);
+    const minMove = 10 ** -precision;
+
+    seriesRef.current.applyOptions({
+      priceFormat: {
+        type: "price",
+        precision,
+        minMove,
+      },
+    });
+
     const candleData = bars.map((b) => ({
       time: b.time as unknown as import("lightweight-charts").UTCTimestamp,
       open: b.open,
@@ -109,12 +136,29 @@ export function TradingChart({ bars, height = 320 }: TradingChartProps) {
     chartRef.current?.timeScale().fitContent();
   }, [bars]);
 
+  const sparse = live && bars.length > 0 && bars.length < 10;
+
   return (
     <div className="rounded-xl border border-chad-border bg-chad-surface p-2">
-      <div className="mb-2 flex items-center justify-between px-1">
-        <span className="text-xs font-medium text-chad-muted">
-          TradingView Lightweight Charts · Codex OHLCV
-        </span>
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-chad-muted">
+            TradingView Lightweight Charts · Codex OHLCV
+          </span>
+          <span className="rounded bg-chad-bg px-1.5 py-0.5 text-[10px] text-chad-accent">
+            Solana mainnet
+          </span>
+          {!live && (
+            <span className="rounded bg-chad-warning/20 px-1.5 py-0.5 text-[10px] text-chad-warning">
+              Demo data
+            </span>
+          )}
+          {sparse && (
+            <span className="rounded bg-chad-bg px-1.5 py-0.5 text-[10px] text-chad-muted">
+              Limited history ({bars.length} bars)
+            </span>
+          )}
+        </div>
         <a
           href="https://www.tradingview.com/lightweight-charts/"
           target="_blank"
