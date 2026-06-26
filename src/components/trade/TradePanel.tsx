@@ -43,15 +43,24 @@ export function TradePanel({ token }: TradePanelProps) {
     const res = await fetch(
       `/api/balance?wallet=${walletAddress}&mint=${token.address}`,
     );
-    if (res.ok) {
-      const data = await res.json();
-      setSolBalance(data.sol ?? 0);
-      setTokenBalance(data.token ?? 0);
+    const data = await res.json();
+    if (!res.ok) {
+      setError(data.error ?? "Could not load wallet balance");
+      return;
     }
+    setSolBalance(data.sol ?? 0);
+    setTokenBalance(data.token ?? 0);
   }, [walletAddress, token.address]);
 
   useEffect(() => {
     refreshBalances();
+    const onFocus = () => refreshBalances();
+    window.addEventListener("focus", onFocus);
+    const interval = setInterval(refreshBalances, 15_000);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      clearInterval(interval);
+    };
   }, [refreshBalances]);
 
   const fetchQuote = useCallback(async () => {

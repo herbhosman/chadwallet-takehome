@@ -7,9 +7,19 @@ import {
 } from "./constants";
 
 export function getSolanaConnection(): Connection {
-  const rpc =
-    process.env.NEXT_PUBLIC_SOLANA_RPC_URL ??
-    "https://api.mainnet-beta.solana.com";
+  const raw = process.env.NEXT_PUBLIC_SOLANA_RPC_URL?.trim();
+  let rpc = "https://api.mainnet-beta.solana.com";
+
+  if (raw) {
+    try {
+      const url = new URL(raw);
+      url.protocol = url.protocol.toLowerCase();
+      rpc = url.toString();
+    } catch {
+      // fall through to default
+    }
+  }
+
   return new Connection(rpc, "confirmed");
 }
 
