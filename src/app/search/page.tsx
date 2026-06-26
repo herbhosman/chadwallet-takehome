@@ -37,32 +37,38 @@ export default function SearchPage() {
           className="w-full rounded-2xl border border-chad-border bg-chad-surface px-4 py-3 text-sm outline-none focus:border-chad-accent"
         />
         <ul className="space-y-2">
-          {filtered.map((token) => (
-            <li key={token.address}>
-              <Link
-                href={`/trade/${token.address}`}
-                className="flex items-center justify-between rounded-xl border border-chad-border bg-chad-surface px-4 py-3 hover:border-chad-accent/30"
-              >
-                <div>
-                  <div className="font-bold">{token.symbol}</div>
-                  <div className="text-xs text-chad-muted">{token.name}</div>
-                </div>
-                <div className="text-right text-sm">
-                  <div>{formatUsd(token.priceUsd)}</div>
-                  <div
-                    className={cn(
-                      "text-xs font-bold",
-                      token.change24h >= 0
-                        ? "text-chad-accent"
-                        : "text-chad-danger",
-                    )}
-                  >
-                    {formatPct(token.change24h)}
-                  </div>
-                </div>
-              </Link>
+          {filtered.length === 0 ? (
+            <li className="rounded-xl border border-chad-border bg-chad-surface px-4 py-8 text-center text-sm text-chad-muted">
+              No tokens match &ldquo;{q}&rdquo;
             </li>
-          ))}
+          ) : (
+            filtered.map((token) => (
+              <li key={token.address}>
+                <Link
+                  href={`/trade/${token.address}`}
+                  className="flex items-center justify-between rounded-xl border border-chad-border bg-chad-surface px-4 py-3 hover:border-chad-accent/30"
+                >
+                  <div>
+                    <div className="font-bold">{token.symbol}</div>
+                    <div className="text-xs text-chad-muted">{token.name}</div>
+                  </div>
+                  <div className="text-right text-sm">
+                    <div>{formatUsd(token.priceUsd)}</div>
+                    <div
+                      className={cn(
+                        "text-xs font-bold",
+                        token.change24h >= 0
+                          ? "text-chad-accent"
+                          : "text-chad-danger",
+                      )}
+                    >
+                      {formatPct(token.change24h)}
+                    </div>
+                  </div>
+                </Link>
+              </li>
+            ))
+          )}
         </ul>
       </div>
     </AppShell>

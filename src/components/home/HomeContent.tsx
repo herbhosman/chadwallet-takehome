@@ -7,22 +7,40 @@ import type { TokenInfo } from "@/types/token";
 
 export function HomeContent({ tokens }: { tokens: TokenInfo[] }) {
   const featured = tokens.slice(0, 6);
+  const top = tokens[0];
 
   return (
     <div className="mx-auto max-w-lg space-y-6 px-4 py-6">
-      <section className="space-y-3">
-        <Image
-          src={BRAND.logoLight}
-          alt="ChadWallet"
-          width={56}
-          height={56}
-          className="rounded-xl"
+      <section className="relative overflow-hidden rounded-2xl border border-chad-border bg-chad-surface p-5">
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.1]"
+          style={{
+            background:
+              "linear-gradient(180deg, #5eb8ff 0%, #7ee8b0 55%, transparent 100%)",
+          }}
         />
-        <p className="text-xs font-semibold uppercase tracking-widest text-chad-accent">
-          Never miss out again
-        </p>
-        <h1 className="text-3xl font-black leading-tight">{BRAND.tagline}</h1>
-        <p className="text-sm text-chad-muted">{BRAND.subtitle}</p>
+        <div className="relative space-y-3">
+          <Image
+            src={BRAND.logoLight}
+            alt="ChadWallet"
+            width={56}
+            height={56}
+            className="rounded-xl"
+          />
+          <p className="text-xs font-semibold uppercase tracking-widest text-chad-accent">
+            Never miss out again
+          </p>
+          <h1 className="text-3xl font-black leading-tight">{BRAND.tagline}</h1>
+          <p className="text-sm text-chad-muted">{BRAND.subtitle}</p>
+          {top && (
+            <Link
+              href={`/trade/${top.address}`}
+              className="inline-flex rounded-2xl bg-chad-accent px-5 py-2.5 text-sm font-bold text-black transition-transform active:scale-[0.98]"
+            >
+              Trade {top.symbol} →
+            </Link>
+          )}
+        </div>
       </section>
 
       <section className="grid grid-cols-3 gap-2">

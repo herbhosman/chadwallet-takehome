@@ -24,6 +24,11 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+  background-image: radial-gradient(
+    ellipse 80% 50% at 50% -20%,
+    rgba(57, 255, 20, 0.06),
+    transparent
+  );
 }
 
 * {

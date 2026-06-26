@@ -114,7 +114,7 @@ function DemoBadge() {
 }
 
 function PrivyAuthPill() {
-  const { authenticated, user, logout } = usePrivy();
+  const { authenticated, user } = usePrivy();
   const { wallets } = useWallets();
 
   if (!authenticated) return null;
@@ -125,13 +125,11 @@ function PrivyAuthPill() {
     : user?.email?.address?.split("@")[0] ?? "Connected";
 
   return (
-    <button
-      type="button"
-      onClick={logout}
+    <Link
+      href="/profile"
       className="rounded-full border border-chad-border bg-chad-surface px-3 py-1 text-xs font-medium text-chad-accent transition-colors hover:border-chad-accent/50"
-      title="Sign out"
     >
       {label}
-    </button>
+    </Link>
   );
 }

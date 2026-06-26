@@ -39,7 +39,7 @@ export function LoginScreen() {
             onClick={login}
             className="w-full rounded-2xl bg-white py-3.5 text-sm font-semibold text-black transition-transform active:scale-[0.98]"
           >
-            Continue with Google or Apple
+            Continue with Google
           </button>
           <p className="text-[11px] text-chad-muted">
             Gasless swaps · Embedded Solana wallet · Powered by Privy
